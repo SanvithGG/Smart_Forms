@@ -19,6 +19,7 @@ import {
   Puzzle,
   Palette,
   FolderOpen,
+  LogOut,
 } from 'lucide-react';
 import {
   getFormsFromStorage,
@@ -26,6 +27,7 @@ import {
   deleteFormFromStorage,
   saveFormToStorage,
 } from '@/lib/formStore';
+import { getStoredUser, clearStoredAuth } from '@/lib/authStore';
 import { checkBackendHealth, fetchFormFromBackend } from '@/lib/api';
 import { CreateFormModal } from '@/components/workspace/CreateFormModal';
 import { Progress } from '@/components/ui/progress';
@@ -36,7 +38,7 @@ import { toast } from 'sonner';
 /**
  * WorkspaceDashboard - Main workspace dashboard listing forms, stats, and search.
  */
-export function WorkspaceDashboard({ onOpenForm, onOpenPreview }) {
+export function WorkspaceDashboard({ onOpenForm, onOpenPreview, onLogout }) {
   // ==========================================
   // 1. STATE VARIABLES
   // ==========================================
@@ -50,6 +52,8 @@ export function WorkspaceDashboard({ onOpenForm, onOpenPreview }) {
   const [expandedWorkspaces, setExpandedWorkspaces] = useState({ private: true });
   const [openMenuId, setOpenMenuId] = useState(null);
   const [aiInput, setAiInput] = useState('');
+  const [isAccountMenuOpen, setIsAccountMenuOpen] = useState(false);
+  const currentUser = getStoredUser() || { displayName: 'Demo Creator', email: 'demo@smartforms.dev' };
   const [backendStatus, setBackendStatus] = useState({
     online: false,
     message: 'Checking backend...',
@@ -419,12 +423,49 @@ export function WorkspaceDashboard({ onOpenForm, onOpenPreview }) {
       {/* Top Header Bar */}
       <header className="h-14 shrink-0 flex items-center justify-between px-5 border-b border-border bg-card">
         {/* Left avatar and account */}
-        <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-full bg-[#0F172A] dark:bg-slate-100 text-white dark:text-[#0F172A] flex items-center justify-center text-xs font-bold shadow-xs">
-            S
-          </div>
-          <span className="text-[13px] font-medium text-foreground">My Account</span>
-          <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" />
+        <div className="relative">
+          <button
+            onClick={() => setIsAccountMenuOpen(!isAccountMenuOpen)}
+            className="flex items-center gap-2.5 px-2 py-1.5 rounded-xl hover:bg-secondary/60 transition-colors cursor-pointer"
+          >
+            <div className="w-8 h-8 rounded-full bg-[#0F172A] dark:bg-slate-100 text-white dark:text-[#0F172A] flex items-center justify-center text-xs font-bold shadow-xs">
+              {(currentUser.displayName || 'S').charAt(0).toUpperCase()}
+            </div>
+            <span className="text-[13px] font-medium text-foreground">
+              {currentUser.displayName || 'My Account'}
+            </span>
+            <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" />
+          </button>
+
+          {/* Account Dropdown Menu */}
+          {isAccountMenuOpen && (
+            <div className="absolute left-0 top-full mt-2 w-64 rounded-2xl border border-border bg-card p-3 shadow-2xl z-50 animate-in fade-in zoom-in-95 duration-150 space-y-2">
+              <div className="px-2 py-1.5 border-b border-border/60">
+                <p className="text-xs font-bold text-foreground truncate">
+                  {currentUser.displayName || 'Demo Creator'}
+                </p>
+                <p className="text-[11px] text-muted-foreground truncate font-mono">
+                  {currentUser.email || 'demo@smartforms.dev'}
+                </p>
+              </div>
+
+              <button
+                onClick={() => {
+                  clearStoredAuth();
+                  setIsAccountMenuOpen(false);
+                  if (onLogout) {
+                    onLogout();
+                  } else {
+                    window.location.href = '/login';
+                  }
+                }}
+                className="w-full flex items-center gap-2 px-2.5 py-2 rounded-xl text-xs font-semibold text-red-500 hover:bg-red-500/10 transition-colors cursor-pointer"
+              >
+                <LogOut className="h-4 w-4" />
+                <span>Log out</span>
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Right action icons & Backend status */}

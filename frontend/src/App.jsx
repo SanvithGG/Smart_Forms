@@ -3,6 +3,7 @@ import { Routes, Route, useNavigate, useParams, Navigate } from 'react-router-do
 import { getFormsFromStorage, DEFAULT_REACT_FORM, saveFormToStorage } from '@/lib/formStore';
 import { fetchFormFromBackend } from '@/lib/api';
 import { LandingPage } from '@/pages/LandingPage';
+import { LoginPage } from '@/pages/LoginPage';
 import { OnboardingFlow } from '@/pages/OnboardingFlow';
 import { AiFormGeneratorChat } from '@/pages/AiFormGeneratorChat';
 import { TypeformAdminApp } from '@/pages/TypeformAdminApp';
@@ -10,10 +11,15 @@ import { FormAnswerView } from '@/pages/FormAnswerView';
 import { WorkspaceDashboard } from '@/pages/WorkspaceDashboard';
 
 /**
- * LandingRoute - Renders the public landing page and handles user navigation
+ * 1. LandingRoute - Renders the public landing page.
+ * Buttons lead to login (/login) or test live survey.
  */
 function LandingRoute() {
   const navigate = useNavigate();
+
+  function handleLogin() {
+    navigate('/login');
+  }
 
   function handleStartSurvey() {
     navigate('/forms/react-feedback-survey/view');
@@ -24,12 +30,13 @@ function LandingRoute() {
       saveFormToStorage(generatedForm);
       navigate('/forms/' + generatedForm.id + '/edit');
     } else {
-      navigate('/workspace');
+      navigate('/login');
     }
   }
 
   return (
     <LandingPage
+      onLogin={handleLogin}
       onStartSurvey={handleStartSurvey}
       onOpenEditor={handleOpenEditor}
     />
@@ -37,7 +44,58 @@ function LandingRoute() {
 }
 
 /**
- * OnboardingRoute - 3-step setup wizard for new users
+ * 2. LoginRoute - Authentication page for Sign In, Sign Up, & 1-Click Demo.
+ * Redirects to the Workspace Dashboard (/workspace) on success.
+ */
+function LoginRoute() {
+  const navigate = useNavigate();
+
+  function handleLoginSuccess() {
+    navigate('/workspace');
+  }
+
+  function handleBackToLanding() {
+    navigate('/');
+  }
+
+  return (
+    <LoginPage
+      onLoginSuccess={handleLoginSuccess}
+      onBackToLanding={handleBackToLanding}
+    />
+  );
+}
+
+/**
+ * 3. WorkspaceRoute - Main workspace dashboard listing forms, stats, and search.
+ * Shows user profile and logout action.
+ */
+function WorkspaceRoute() {
+  const navigate = useNavigate();
+
+  function handleOpenForm(form) {
+    navigate('/forms/' + form.id + '/edit');
+  }
+
+  function handleOpenPreview(form) {
+    navigate('/forms/' + form.id + '/view');
+  }
+
+  function handleLogout() {
+    navigate('/login');
+  }
+
+  return (
+    <WorkspaceDashboard
+      onOpenForm={handleOpenForm}
+      onOpenPreview={handleOpenPreview}
+      onLogout={handleLogout}
+    />
+  );
+}
+
+/**
+ * 4. OnboardingRoute - 3-step setup wizard for new users
  */
 function OnboardingRoute({ onComplete }) {
   const navigate = useNavigate();
@@ -51,7 +109,7 @@ function OnboardingRoute({ onComplete }) {
 }
 
 /**
- * AiChatRoute - Conversational AI generator for creating forms
+ * 5. AiChatRoute - Conversational AI generator for creating forms
  */
 function AiChatRoute({ profile }) {
   const navigate = useNavigate();
@@ -70,29 +128,7 @@ function AiChatRoute({ profile }) {
 }
 
 /**
- * WorkspaceRoute - Main workspace dashboard listing forms, stats, and search
- */
-function WorkspaceRoute() {
-  const navigate = useNavigate();
-
-  function handleOpenForm(form) {
-    navigate('/forms/' + form.id + '/edit');
-  }
-
-  function handleOpenPreview(form) {
-    navigate('/forms/' + form.id + '/view');
-  }
-
-  return (
-    <WorkspaceDashboard
-      onOpenForm={handleOpenForm}
-      onOpenPreview={handleOpenPreview}
-    />
-  );
-}
-
-/**
- * FormAdminRoute - The main form builder and editor view
+ * 6. FormAdminRoute - The main form builder and editor view
  */
 function FormAdminRoute() {
   const navigate = useNavigate();
@@ -149,7 +185,7 @@ function FormAdminRoute() {
 }
 
 /**
- * FormAnswerRoute - The respondent questionnaire view (Locked Layout Component)
+ * 7. FormAnswerRoute - The respondent questionnaire view (Locked Layout Component)
  */
 function FormAnswerRoute() {
   const navigate = useNavigate();
@@ -198,7 +234,8 @@ function FormAnswerRoute() {
 }
 
 /**
- * Main App Component with Client-Side Routing
+ * Main App Component with Client-Side Routing:
+ * Flow: Landing Page (/) -> Login (/login) -> Workspace (/workspace) -> Builder (/forms/:id/edit)
  */
 export function App() {
   const [onboardingProfile, setOnboardingProfile] = useState(null);
@@ -207,7 +244,17 @@ export function App() {
     <div className="min-h-screen bg-background text-foreground selection:bg-primary selection:text-primary-foreground">
       <main>
         <Routes>
+          {/* 1. Public Landing Page */}
           <Route path="/" element={<LandingRoute />} />
+
+          {/* 2. Authentication Flow */}
+          <Route path="/login" element={<LoginRoute />} />
+          <Route path="/auth" element={<Navigate to="/login" replace />} />
+
+          {/* 3. Workspace Dashboard (User's Forms & Overview) */}
+          <Route path="/workspace" element={<WorkspaceRoute />} />
+
+          {/* 4. Onboarding & AI Generator Flow */}
           <Route
             path="/onboarding"
             element={<OnboardingRoute onComplete={setOnboardingProfile} />}
@@ -220,13 +267,12 @@ export function App() {
             path="/ai-generator"
             element={<AiChatRoute profile={onboardingProfile} />}
           />
-          <Route path="/workspace" element={<WorkspaceRoute />} />
 
-          {/* Builder / Editor Routes */}
+          {/* 5. Builder / Editor Routes */}
           <Route path="/admin" element={<FormAdminRoute />} />
           <Route path="/forms/:formId/edit" element={<FormAdminRoute />} />
 
-          {/* MCQ Respondent View Routes (Locked layout preserved) */}
+          {/* 6. MCQ Respondent View Routes (Locked layout preserved) */}
           <Route path="/answer" element={<FormAnswerRoute />} />
           <Route path="/forms/:formId/view" element={<FormAnswerRoute />} />
           <Route path="/forms/:formId/answer" element={<FormAnswerRoute />} />
