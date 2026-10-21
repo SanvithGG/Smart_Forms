@@ -1325,7 +1325,7 @@ export function TypeformAdminApp({
       {/* Main Workspace Body */}
       <div className="flex-1 flex flex-col min-h-0 relative overflow-hidden">
         {/* Share and Results views */}
-        {activeTab === 'share' && <TypeformShareView />}
+        {activeTab === 'share' && <TypeformShareView form={form} />}
         {activeTab === 'results' && <TypeformResultsView />}
 
         {/* Workflow Graph View */}

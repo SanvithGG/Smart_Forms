@@ -4,15 +4,17 @@ import { Button } from '@/components/ui/button';
 import { Share2, Copy, Check, Code, Globe, Maximize2, SlidersHorizontal } from 'lucide-react';
 import { toast } from 'sonner';
 
-export function TypeformShareView() {
+export function TypeformShareView({ form }) {
     const [copiedLink, setCopiedLink] = useState(false);
     const [copiedEmbed, setCopiedEmbed] = useState(false);
     const [embedType, setEmbedType] = useState('full');
-    const shareUrl = typeof window !== 'undefined' ? `${window.location.origin}/` : 'http://localhost:5173/';
+    const formId = form?.id || 'react-feedback-survey';
+    const origin = typeof window !== 'undefined' ? window.location.origin : 'http://localhost:5173';
+    const shareUrl = `${origin}/forms/${formId}/view`;
     const embedSnippets = {
         full: `<iframe src="${shareUrl}" width="100%" height="600" frameborder="0" allow="fullscreen"></iframe>`,
-        popup: `<script src="http://localhost:5173/embed.js"></script>\n<button data-tf-popup="react-survey">Open Survey</button>`,
-        drawer: `<script src="http://localhost:5173/embed.js"></script>\n<button data-tf-slider="react-survey">Provide Feedback</button>`,
+        popup: `<script src="${origin}/embed.js"></script>\n<button data-tf-popup="${formId}">Open Survey</button>`,
+        drawer: `<script src="${origin}/embed.js"></script>\n<button data-tf-slider="${formId}">Provide Feedback</button>`,
     };
     const handleCopyLink = () => {
         navigator.clipboard.writeText(shareUrl);
