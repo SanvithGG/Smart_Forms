@@ -28,7 +28,7 @@ import {
   saveFormToStorage,
 } from '@/lib/formStore';
 import { getStoredUser, clearStoredAuth } from '@/lib/authStore';
-import { checkBackendHealth, fetchFormFromBackend } from '@/lib/api';
+import { checkBackendHealth } from '@/lib/api';
 import { CreateFormModal } from '@/components/workspace/CreateFormModal';
 import { Progress } from '@/components/ui/progress';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -63,7 +63,7 @@ export function WorkspaceDashboard({ onOpenForm, onOpenPreview, onLogout }) {
   // 2. EFFECTS (HEALTH CHECK & DATA LOADING)
   // ==========================================
 
-  // Check Spring Boot backend health and sync default form periodically
+  // Check Spring Boot backend health periodically
   useEffect(function () {
     let isMounted = true;
 
@@ -71,16 +71,6 @@ export function WorkspaceDashboard({ onOpenForm, onOpenPreview, onLogout }) {
       const status = await checkBackendHealth();
       if (isMounted) {
         setBackendStatus(status);
-      }
-
-      if (status.online) {
-        const backendForm = await fetchFormFromBackend('react-feedback-survey');
-        if (backendForm && isMounted) {
-          saveFormToStorage(backendForm);
-          setFormListVersion(function (currentVersion) {
-            return currentVersion + 1;
-          });
-        }
       }
     }
 
