@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { ReactFlow, Controls, Background, useNodesState, useEdgesState, Handle, Position, MarkerType, BackgroundVariant } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
@@ -273,8 +273,14 @@ export function TypeformWorkflowView({ form, onUpdateForm, onSelectNodeForEdit, 
         });
         return { nodes, edges };
     }, [form, nodeList, onSelectNodeForEdit, handleOpenLogicModal]);
-    const [nodes, , onNodesChange] = useNodesState(initialNodesAndEdges.nodes);
-    const [edges, , onEdgesChange] = useEdgesState(initialNodesAndEdges.edges);
+    const [nodes, setNodes, onNodesChange] = useNodesState(initialNodesAndEdges.nodes);
+    const [edges, setEdges, onEdgesChange] = useEdgesState(initialNodesAndEdges.edges);
+
+    // Keep ReactFlow nodes & edges synchronized when form branching rules change
+    useEffect(() => {
+        setNodes(initialNodesAndEdges.nodes);
+        setEdges(initialNodesAndEdges.edges);
+    }, [initialNodesAndEdges, setNodes, setEdges]);
     const activeLogicNode = selectedLogicNodeId ? form.nodes[selectedLogicNodeId] : null;
     return (<div className="flex-1 flex flex-col bg-secondary/10 relative overflow-hidden h-[calc(100vh-48px)] font-sans">
       {/* 1. SUB-TOOLBAR UNDER NAVBAR */}
