@@ -6,10 +6,12 @@ import com.smartforms.backend.dto.QuestionDtos;
 import com.smartforms.backend.entity.Branch;
 import com.smartforms.backend.entity.Form;
 import com.smartforms.backend.entity.Question;
+import com.smartforms.backend.entity.Workspace;
 import com.smartforms.backend.exception.ApiException;
 import com.smartforms.backend.repository.BranchRepository;
 import com.smartforms.backend.repository.FormRepository;
 import com.smartforms.backend.repository.QuestionRepository;
+import com.smartforms.backend.repository.WorkspaceRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,16 +26,28 @@ public class FormService {
     private final FormRepository formRepository;
     private final QuestionRepository questionRepository;
     private final BranchRepository branchRepository;
+    private final WorkspaceRepository workspaceRepository;
 
-    public FormService(FormRepository formRepository, QuestionRepository questionRepository, BranchRepository branchRepository) {
+    public FormService(FormRepository formRepository,
+                       QuestionRepository questionRepository,
+                       BranchRepository branchRepository,
+                       WorkspaceRepository workspaceRepository) {
         this.formRepository = formRepository;
         this.questionRepository = questionRepository;
         this.branchRepository = branchRepository;
+        this.workspaceRepository = workspaceRepository;
     }
 
     public Form create(CreateFormRequest req) {
+        String wsId = req.workspaceId();
+        if (wsId == null || !workspaceRepository.existsById(wsId)) {
+            wsId = workspaceRepository.findAll().stream()
+                    .map(Workspace::getId)
+                    .findFirst()
+                    .orElse(wsId);
+        }
         Form form = new Form();
-        form.setWorkspaceId(req.workspaceId());
+        form.setWorkspaceId(wsId);
         form.setTitle(req.title());
         form.setDescription(req.description());
         return formRepository.save(Objects.requireNonNull(form));

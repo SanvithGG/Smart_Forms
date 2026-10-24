@@ -47,6 +47,7 @@ public class DataInitializer implements CommandLineRunner {
 
         // 2. Create Default Workspace
         Workspace ws = new Workspace();
+        ws.setId("default-ws");
         ws.setOwnerId(user.getId());
         ws.setName("Default Workspace");
         ws = workspaceRepository.save(ws);
