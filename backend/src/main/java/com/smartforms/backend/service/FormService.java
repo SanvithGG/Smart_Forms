@@ -8,8 +8,10 @@ import com.smartforms.backend.entity.Form;
 import com.smartforms.backend.entity.Question;
 import com.smartforms.backend.entity.Workspace;
 import com.smartforms.backend.exception.ApiException;
+import com.smartforms.backend.repository.AnswerRepository;
 import com.smartforms.backend.repository.BranchRepository;
 import com.smartforms.backend.repository.FormRepository;
+import com.smartforms.backend.repository.FormResponseRepository;
 import com.smartforms.backend.repository.QuestionRepository;
 import com.smartforms.backend.repository.WorkspaceRepository;
 import org.springframework.http.HttpStatus;
@@ -27,15 +29,21 @@ public class FormService {
     private final QuestionRepository questionRepository;
     private final BranchRepository branchRepository;
     private final WorkspaceRepository workspaceRepository;
+    private final FormResponseRepository formResponseRepository;
+    private final AnswerRepository answerRepository;
 
     public FormService(FormRepository formRepository,
                        QuestionRepository questionRepository,
                        BranchRepository branchRepository,
-                       WorkspaceRepository workspaceRepository) {
+                       WorkspaceRepository workspaceRepository,
+                       FormResponseRepository formResponseRepository,
+                       AnswerRepository answerRepository) {
         this.formRepository = formRepository;
         this.questionRepository = questionRepository;
         this.branchRepository = branchRepository;
         this.workspaceRepository = workspaceRepository;
+        this.formResponseRepository = formResponseRepository;
+        this.answerRepository = answerRepository;
     }
 
     public Form create(CreateFormRequest req) {
@@ -73,9 +81,22 @@ public class FormService {
 
     @Transactional
     public void delete(String id) {
+        Objects.requireNonNull(id, "Form ID cannot be null");
+        Form form = formRepository.findById(id).orElse(null);
+        if (form != null && form.getStartNodeId() != null) {
+            form.setStartNodeId(null);
+            formRepository.saveAndFlush(form);
+        }
+
+        answerRepository.deleteByFormId(id);
+        formResponseRepository.deleteByFormId(id);
         branchRepository.deleteByFormId(id);
         questionRepository.deleteByFormId(id);
-        formRepository.deleteById(Objects.requireNonNull(id));
+        if (form != null) {
+            formRepository.delete(form);
+        } else {
+            formRepository.deleteById(id);
+        }
     }
 
     @Transactional(readOnly = true)
