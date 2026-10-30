@@ -1,11 +1,16 @@
 package com.smartforms.backend.service;
 
 import com.smartforms.backend.dto.QuestionDtos.*;
+import com.smartforms.backend.entity.Form;
 import com.smartforms.backend.entity.Question;
 import com.smartforms.backend.exception.ApiException;
+import com.smartforms.backend.repository.AnswerRepository;
+import com.smartforms.backend.repository.BranchRepository;
+import com.smartforms.backend.repository.FormRepository;
 import com.smartforms.backend.repository.QuestionRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Objects;
@@ -14,9 +19,18 @@ import java.util.Objects;
 public class QuestionService {
 
     private final QuestionRepository questionRepository;
+    private final AnswerRepository answerRepository;
+    private final BranchRepository branchRepository;
+    private final FormRepository formRepository;
 
-    public QuestionService(QuestionRepository questionRepository) {
+    public QuestionService(QuestionRepository questionRepository,
+                           AnswerRepository answerRepository,
+                           BranchRepository branchRepository,
+                           FormRepository formRepository) {
         this.questionRepository = questionRepository;
+        this.answerRepository = answerRepository;
+        this.branchRepository = branchRepository;
+        this.formRepository = formRepository;
     }
 
     public Question create(CreateQuestionRequest req) {
@@ -55,7 +69,29 @@ public class QuestionService {
         return questionRepository.save(Objects.requireNonNull(q));
     }
 
+    @Transactional
     public void delete(String id) {
-        questionRepository.deleteById(Objects.requireNonNull(id));
+        Objects.requireNonNull(id, "Question ID cannot be null");
+        Question question = questionRepository.findById(id).orElse(null);
+        if (question == null) {
+            return;
+        }
+
+        // If this question is the form's startNodeId, reassign or clear startNodeId
+        Form form = formRepository.findById(question.getFormId()).orElse(null);
+        if (form != null && id.equals(form.getStartNodeId())) {
+            List<Question> remaining = questionRepository.findByFormIdOrderByOrderIndexAsc(form.getId())
+                    .stream()
+                    .filter(q -> !q.getId().equals(id))
+                    .toList();
+            form.setStartNodeId(remaining.isEmpty() ? null : remaining.get(0).getId());
+            formRepository.saveAndFlush(form);
+        }
+
+        // Cascade delete answers and branches referencing this question
+        answerRepository.deleteByQuestionId(id);
+        branchRepository.deleteByQuestionId(id);
+
+        questionRepository.delete(question);
     }
 }

@@ -20,5 +20,9 @@ public interface AnswerRepository extends JpaRepository<Answer, String> {
     @Modifying
     @Query("DELETE FROM Answer a WHERE a.questionId IN (SELECT q.id FROM Question q WHERE q.formId = :formId) OR a.responseId IN (SELECT r.id FROM FormResponse r WHERE r.formId = :formId)")
     void deleteByFormId(@Param("formId") String formId);
+
+    @Modifying
+    @Query("DELETE FROM Answer a WHERE a.questionId = :questionId")
+    void deleteByQuestionId(@Param("questionId") String questionId);
 }
 
