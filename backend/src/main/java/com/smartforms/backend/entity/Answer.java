@@ -45,6 +45,11 @@ public class Answer {
     @PrePersist
     public void prePersist() {
         if (id == null) id = UUID.randomUUID().toString();
+        if (answeredAt == null) answeredAt = Instant.now();
+    }
+
+    @PreUpdate
+    public void preUpdate() {
         answeredAt = Instant.now();
     }
 }

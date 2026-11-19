@@ -8,9 +8,11 @@ import org.springframework.data.repository.query.Param;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 
 public interface AnswerRepository extends JpaRepository<Answer, String> {
     List<Answer> findByResponseId(String responseId);
+    Optional<Answer> findByResponseIdAndQuestionId(String responseId, String questionId);
     void deleteByResponseId(String responseId);
 
     @Modifying

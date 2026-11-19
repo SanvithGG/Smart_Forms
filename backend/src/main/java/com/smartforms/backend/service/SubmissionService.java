@@ -70,15 +70,20 @@ public class SubmissionService {
             throw new ApiException(HttpStatus.CONFLICT, "This response session is no longer in progress");
         }
 
-        // Persist the answer
-        Answer answer = new Answer();
-        answer.setResponseId(responseId);
-        answer.setQuestionId(req.questionId());
+        // Persist the answer (update existing answer for question if re-answering, or create new)
+        Answer answer = answerRepository.findByResponseIdAndQuestionId(responseId, req.questionId())
+                .orElseGet(() -> {
+                    Answer a = new Answer();
+                    a.setResponseId(responseId);
+                    a.setQuestionId(req.questionId());
+                    return a;
+                });
         try {
             answer.setValueJson(objectMapper.writeValueAsString(req.value()));
         } catch (JsonProcessingException e) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "Could not serialize answer value");
         }
+        answer.setAnsweredAt(Instant.now());
         answerRepository.save(Objects.requireNonNull(answer));
 
         // Determine next node by evaluating outgoing branches in priority order
@@ -134,11 +139,11 @@ public class SubmissionService {
                     } catch (JsonProcessingException e) {
                         value = a.getValueJson();
                     }
-                    return Map.<String, Object>of(
-                            "questionId", a.getQuestionId(),
-                            "value", value,
-                            "answeredAt", a.getAnsweredAt().toString()
-                    );
+                    Map<String, Object> map = new java.util.LinkedHashMap<>();
+                    map.put("questionId", a.getQuestionId());
+                    map.put("value", value);
+                    map.put("answeredAt", a.getAnsweredAt() != null ? a.getAnsweredAt().toString() : null);
+                    return map;
                 })
                 .toList();
 
